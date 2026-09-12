@@ -41,7 +41,8 @@
     "format": "prettier --write .",
     "package:smoke": "tsx scripts/package-smoke.ts",
     "ingest:docs": "tsx scripts/ingest-docs.ts",
-    "validate:corpus": "tsx scripts/validate-corpus.ts"
+    "validate:corpus": "tsx scripts/validate-corpus.ts",
+    "benchmark:retrieval": "tsx scripts/benchmark-retrieval.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",

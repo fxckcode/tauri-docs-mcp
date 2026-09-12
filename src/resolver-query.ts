@@ -1,10 +1,10 @@
 import corpus from '../corpus/tauri-2@58194ceb69424c4332b2780b196ced3a6fffb32b/index.json' with { type: 'json' };
 import {
   assertCorpusEntryBounds,
-  boundedSnippet,
   RESOURCE_LIMITS,
   validateResourceBounds,
 } from './resource-limits.js';
+import { retrieve } from './retrieval.js';
 
 for (const entry of corpus.entries) assertCorpusEntryBounds(entry);
 
@@ -90,6 +90,7 @@ export type QueryResult = {
   sourceRevision: string;
   version: 'Tauri 2';
   versionSensitive: true;
+  matches?: string[];
 };
 
 const invalidInput = (message: string): Validation<never> => ({
@@ -214,47 +215,20 @@ export function queryDocs(input: {
 }): { snapshot: string; results: QueryResult[] } {
   const resolved = resolveSnapshot({ identifier: input.snapshot });
   if (!resolved.ok) throw new Error(resolved.error.message);
-  const terms = input.query
-    .toLowerCase()
-    .split(/\s+/)
-    .slice(0, RESOURCE_LIMITS.maxTermCount);
-  const results = corpus.entries
-    .map((entry, index) => {
-      const searchable = [
-        entry.title,
-        entry.section,
-        entry.context,
-        ...entry.keywords,
-      ]
-        .join(' ')
-        .toLowerCase();
-      const score = terms.reduce(
-        (total, term) =>
-          total +
-          (entry.title.toLowerCase() === term
-            ? 100
-            : entry.title.toLowerCase().includes(term)
-              ? 50
-              : 0) +
-          (entry.keywords.includes(term) ? 30 : 0) +
-          (searchable.includes(term) ? 5 : 0),
-        0,
-      );
-      return { entry, score, index };
-    })
-    .filter((item) => item.score > 0)
-    .sort((a, b) => b.score - a.score || a.index - b.index)
-    .slice(0, input.limit)
-    .map(({ entry }) => ({
+  const results = retrieve(corpus.entries, input.query, input.limit).map(
+    ({ document: entry, matches, snippet }) => ({
       title: entry.title,
       heading: entry.section.split(' > ').at(-1) ?? entry.title,
       section: entry.section,
       url: entry.url,
-      content: boundedSnippet(entry.context),
+      anchor: new URL(entry.url).pathname.split('/').filter(Boolean).at(-1),
+      content: snippet,
       corpusSnapshot: corpus.snapshot,
       sourceRevision: entry.sourceRevision,
       version: 'Tauri 2' as const,
       versionSensitive: true as const,
-    }));
+      matches,
+    }),
+  );
   return { snapshot: corpus.snapshot, results };
 }
