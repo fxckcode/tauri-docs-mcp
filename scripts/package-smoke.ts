@@ -7,6 +7,7 @@ const EXPECTED_FILES = new Set([
   'package.json',
   'LICENSE',
   'README.md',
+  'dist/package.json',
   'dist/src/index.js',
   'dist/src/index.js.map',
   'dist/src/index.d.ts',
@@ -23,6 +24,10 @@ const EXPECTED_FILES = new Set([
   'dist/src/corpus.js.map',
   'dist/src/corpus.d.ts',
   'dist/src/corpus.d.ts.map',
+  'dist/src/resolver-query.js',
+  'dist/src/resolver-query.js.map',
+  'dist/src/resolver-query.d.ts',
+  'dist/src/resolver-query.d.ts.map',
   'dist/corpus/tauri-2@58194ceb69424c4332b2780b196ced3a6fffb32b/index.json',
   'corpus/manifest.json',
   'corpus/NOTICES.md',
@@ -144,7 +149,7 @@ async function main(): Promise<void> {
     );
     if (
       tools.result?.tools?.map((tool) => tool.name).join() !==
-      'search_tauri_docs'
+      'resolve_tauri_docs,query_tauri_docs,search_tauri_docs'
     ) {
       throw new Error('tools/list did not expose search_tauri_docs');
     }
@@ -156,7 +161,7 @@ async function main(): Promise<void> {
         id: 3,
         method: 'tools/call',
         params: {
-          name: 'search_tauri_docs',
+          name: 'query_tauri_docs',
           arguments: { query: 'window', limit: 1 },
         },
       },
@@ -168,7 +173,7 @@ async function main(): Promise<void> {
       !validText ||
       !JSON.parse(validText).results?.length
     ) {
-      throw new Error('valid search smoke flow failed');
+      throw new Error('valid query smoke flow failed');
     }
 
     const invalid = await request(

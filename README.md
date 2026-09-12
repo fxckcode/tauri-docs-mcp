@@ -2,8 +2,8 @@
 
 [![npm version](https://img.shields.io/npm/v/tauri-docs-mcp)](https://www.npmjs.com/package/tauri-docs-mcp)
 
-A read-only Model Context Protocol (MCP) server for searching a checked-in
-index of official Tauri 2 documentation.
+A read-only Model Context Protocol (MCP) server for resolving and querying a
+checked-in snapshot of official Tauri 2 documentation.
 
 ## Requirements
 
@@ -54,17 +54,57 @@ HTTP listener; diagnostics, if added later, belong on stderr.
 
 ## Tool contract
 
-The only tool is `search_tauri_docs`:
+The server exposes two stable tools and one backwards-compatible legacy tool.
+
+### `resolve_tauri_docs`
+
+Resolve the default snapshot or an explicit identifier:
+
+```json
+{}
+```
+
+```json
+{ "identifier": "tauri@2" }
+```
+
+Supported identifiers are `tauri`, `tauri@2`, and the immutable snapshot ID
+`tauri-2@58194ceb69424c4332b2780b196ced3a6fffb32b`. Resolution is deterministic
+and returns snapshot, source revision, generated-at, version, and entry-count
+metadata. Unsupported identifiers return `UNSUPPORTED_SNAPSHOT`.
+
+### `query_tauri_docs`
+
+Query content from the default or selected snapshot:
+
+```json
+{ "query": "capabilities", "snapshot": "tauri@2", "limit": 3 }
+```
+
+`query` is required and must contain 1–200 non-whitespace characters.
+`snapshot` is optional and accepts the resolver identifiers. `limit` is an
+optional integer from 1–10 (default 5). Results are bounded, deterministic,
+and include title, heading, section, canonical URL, content, corpus snapshot,
+source revision, Tauri version, and `versionSensitive`. Empty matches return
+`results: []`, not an application error. Inputs reject unknown fields.
+
+Both tools are read-only and idempotent. They read only the checked-in corpus;
+there is no live fetching or arbitrary URL access.
+
+### `search_tauri_docs` (compatibility)
+
+Existing clients can continue to call:
 
 ```json
 { "query": "capabilities", "limit": 3 }
 ```
 
-`query` is required and must contain 1–200 non-whitespace characters.
-`limit` is optional and must be an integer from 1–10 (default 5). Results are
-deterministic, bounded, and include title, canonical URL, section, concise
-context, Tauri version, and a `versionSensitive` indicator. Invalid inputs
-return structured error objects.
+It remains supported with its existing response shape and limits. New clients
+should use `resolve_tauri_docs` followed by `query_tauri_docs`.
+
+Application errors are returned with stable discriminated codes such as
+`INVALID_INPUT`, `INVALID_QUERY`, `INVALID_LIMIT`, and
+`UNSUPPORTED_SNAPSHOT`; protocol errors remain MCP protocol errors.
 
 ## Product boundary
 
