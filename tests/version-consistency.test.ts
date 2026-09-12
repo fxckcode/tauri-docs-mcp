@@ -3,6 +3,7 @@ import {
   assertExpectedVersion,
   assertVersionConsistency,
   loadReleaseMetadata,
+  validateReleaseMetadata,
   parseReleaseTag,
 } from '../scripts/check-release-metadata.js';
 
@@ -38,6 +39,26 @@ describe('release metadata contract', () => {
       errors: [
         'package version 1.2.3 does not match release tag version 1.2.4',
       ],
+    });
+  });
+
+  it('rejects a non-package drift when the release tag version matches', () => {
+    const metadata = {
+      packageName: 'tauri-docs-mcp',
+      mcpName: 'io.github.fxckcode/tauri-docs-mcp',
+      registryName: 'io.github.fxckcode/tauri-docs-mcp',
+      registryPackageIdentifier: 'tauri-docs-mcp',
+      packageVersion: '1.2.3',
+      serverVersion: '1.2.4',
+      corpusSnapshot: 'tauri-2@revision',
+      corpusPackageVersion: '1.2.3',
+      registryVersion: '1.2.3',
+      registryPackageVersion: '1.2.3',
+    };
+
+    expect(validateReleaseMetadata(metadata, '1.2.3')).toEqual({
+      ok: false,
+      errors: ['server version 1.2.4 does not match package version 1.2.3'],
     });
   });
 

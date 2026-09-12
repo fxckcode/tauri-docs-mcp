@@ -106,6 +106,21 @@ export function assertExpectedVersion(
       };
 }
 
+export function validateReleaseMetadata(
+  metadata: ReleaseMetadata,
+  expectedVersion?: string,
+): { ok: true } | { ok: false; errors: string[] } {
+  const consistencyResult = assertVersionConsistency(metadata);
+  const expectedResult = expectedVersion
+    ? assertExpectedVersion(metadata, expectedVersion)
+    : { ok: true as const };
+  const errors = [
+    ...(consistencyResult.ok ? [] : consistencyResult.errors),
+    ...(expectedResult.ok ? [] : expectedResult.errors),
+  ];
+  return errors.length ? { ok: false, errors } : { ok: true };
+}
+
 export async function loadConfigExamples(): Promise<JsonObject[]> {
   const names = [
     'generic.json',
@@ -155,9 +170,7 @@ if (process.argv[1]?.endsWith('check-release-metadata.ts')) {
     expectedVersionIndex >= 0
       ? process.argv[expectedVersionIndex + 1]
       : undefined;
-  const result = expectedVersion
-    ? assertExpectedVersion(metadata, expectedVersion)
-    : assertVersionConsistency(metadata);
+  const result = validateReleaseMetadata(metadata, expectedVersion);
   const errors = [
     ...(result.ok ? [] : result.errors),
     ...(exampleResult.ok ? [] : exampleResult.errors),
