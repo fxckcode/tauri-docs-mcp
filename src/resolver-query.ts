@@ -1,4 +1,12 @@
 import corpus from '../corpus/tauri-2@58194ceb69424c4332b2780b196ced3a6fffb32b/index.json' with { type: 'json' };
+import {
+  assertCorpusEntryBounds,
+  boundedSnippet,
+  RESOURCE_LIMITS,
+  validateResourceBounds,
+} from './resource-limits.js';
+
+for (const entry of corpus.entries) assertCorpusEntryBounds(entry);
 
 export const DEFAULT_SNAPSHOT = corpus.snapshot;
 export const SUPPORTED_IDENTIFIERS = [
@@ -23,13 +31,14 @@ export const QUERY_INPUT_SCHEMA = {
     query: {
       type: 'string',
       minLength: 1,
-      maxLength: 200,
-      description: 'Search terms, 1-200 characters.',
+      maxLength: RESOURCE_LIMITS.maxQueryLength,
+      maxTerms: RESOURCE_LIMITS.maxTermCount,
+      description: 'Search terms, bounded by length and term count.',
     },
     limit: {
       type: 'integer',
       minimum: 1,
-      maximum: 10,
+      maximum: RESOURCE_LIMITS.maxResultCount,
       description: 'Maximum results; defaults to 5.',
     },
     snapshot: {
@@ -41,10 +50,13 @@ export const QUERY_INPUT_SCHEMA = {
   required: ['query'],
   additionalProperties: false,
 } as const;
-const MAX_CONTENT_LENGTH = 1200;
 
 type ApplicationErrorCode =
-  'INVALID_INPUT' | 'INVALID_QUERY' | 'INVALID_LIMIT' | 'UNSUPPORTED_SNAPSHOT';
+  | 'INVALID_INPUT'
+  | 'INVALID_QUERY'
+  | 'INVALID_LIMIT'
+  | 'UNSUPPORTED_SNAPSHOT'
+  | 'RESPONSE_TOO_LARGE';
 
 export type ApplicationError = {
   code: ApplicationErrorCode;
@@ -146,13 +158,13 @@ export function validateQueryInput(
   if (
     typeof input.query !== 'string' ||
     input.query.trim().length < 1 ||
-    input.query.trim().length > 200
+    input.query.trim().length > RESOURCE_LIMITS.maxQueryLength
   )
     return {
       ok: false,
       error: {
         code: 'INVALID_QUERY',
-        message: 'query must contain 1-200 non-whitespace characters',
+        message: `query must contain 1-${RESOURCE_LIMITS.maxQueryLength} non-whitespace characters`,
       },
     };
   const limit = input.limit ?? 5;
@@ -160,19 +172,31 @@ export function validateQueryInput(
     typeof limit !== 'number' ||
     !Number.isInteger(limit) ||
     limit < 1 ||
-    limit > 10
+    limit > RESOURCE_LIMITS.maxResultCount
   )
     return {
       ok: false,
       error: {
         code: 'INVALID_LIMIT',
-        message: 'limit must be an integer between 1 and 10',
+        message: `limit must be an integer between 1 and ${RESOURCE_LIMITS.maxResultCount}`,
       },
     };
   if (input.snapshot !== undefined && typeof input.snapshot !== 'string')
     return invalidInput('snapshot must be a string');
   if (typeof input.snapshot === 'string' && input.snapshot.trim().length === 0)
     return invalidInput('snapshot must not be empty');
+  const resourceValidation = validateResourceBounds({
+    query: input.query,
+    limit,
+  });
+  if (!resourceValidation.ok)
+    return {
+      ok: false,
+      error: {
+        code: resourceValidation.error.code as ApplicationErrorCode,
+        message: resourceValidation.error.message,
+      },
+    };
   return {
     ok: true,
     value: {
@@ -183,12 +207,6 @@ export function validateQueryInput(
   };
 }
 
-function snippet(content: string): string {
-  return content.length <= MAX_CONTENT_LENGTH
-    ? content
-    : `${content.slice(0, MAX_CONTENT_LENGTH - 1)}…`;
-}
-
 export function queryDocs(input: {
   query: string;
   limit: number;
@@ -196,7 +214,10 @@ export function queryDocs(input: {
 }): { snapshot: string; results: QueryResult[] } {
   const resolved = resolveSnapshot({ identifier: input.snapshot });
   if (!resolved.ok) throw new Error(resolved.error.message);
-  const terms = input.query.toLowerCase().split(/\s+/);
+  const terms = input.query
+    .toLowerCase()
+    .split(/\s+/)
+    .slice(0, RESOURCE_LIMITS.maxTermCount);
   const results = corpus.entries
     .map((entry, index) => {
       const searchable = [
@@ -229,7 +250,7 @@ export function queryDocs(input: {
       heading: entry.section.split(' > ').at(-1) ?? entry.title,
       section: entry.section,
       url: entry.url,
-      content: snippet(entry.context),
+      content: boundedSnippet(entry.context),
       corpusSnapshot: corpus.snapshot,
       sourceRevision: entry.sourceRevision,
       version: 'Tauri 2' as const,

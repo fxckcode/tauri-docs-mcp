@@ -50,7 +50,9 @@ Configure an MCP client to launch the installed binary over stdio:
 ```
 
 The server writes MCP JSON-RPC messages only to stdout. It does not start an
-HTTP listener; diagnostics, if added later, belong on stderr.
+HTTP listener. Diagnostics are disabled by default; opt in with
+`TAURI_DOCS_MCP_DIAGNOSTICS=1` and they are written to stderr as event names
+only (never request arguments, corpus content, secrets, or PII).
 
 ## Tool contract
 
@@ -81,15 +83,24 @@ Query content from the default or selected snapshot:
 { "query": "capabilities", "snapshot": "tauri@2", "limit": 3 }
 ```
 
-`query` is required and must contain 1–200 non-whitespace characters.
-`snapshot` is optional and accepts the resolver identifiers. `limit` is an
-optional integer from 1–10 (default 5). Results are bounded, deterministic,
+`query` is required and must contain 1–200 non-whitespace characters and at
+most 16 whitespace-separated terms. `snapshot` is optional and accepts the
+resolver identifiers. `limit` is an optional integer from 1–10 (default 5).
+Results are bounded, deterministic,
 and include title, heading, section, canonical URL, content, corpus snapshot,
 source revision, Tauri version, and `versionSensitive`. Empty matches return
 `results: []`, not an application error. Inputs reject unknown fields.
 
 Both tools are read-only and idempotent. They read only the checked-in corpus;
 there is no live fetching or arbitrary URL access.
+
+### Resource and lifecycle bounds
+
+The shared tool contract enforces a 200-character query, 16 terms, 10 results,
+1,200-character snippets, 8 KiB corpus entries, and 32 KiB serialized tool
+responses. The stdio frame buffer is capped at 64 KiB. EOF, transport errors,
+SIGINT, and SIGTERM share an idempotent shutdown path with a one-second cleanup
+bound; in-flight work is allowed to settle or is abandoned at that bound.
 
 ### `search_tauri_docs` (compatibility)
 

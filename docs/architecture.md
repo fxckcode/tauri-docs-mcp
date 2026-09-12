@@ -5,6 +5,18 @@ explicit so retrieval changes do not change the protocol boundary.
 
 ```text
 MCP stdio transport -> server contract handlers -> retrieval -> corpus
+
+## Resource and process lifecycle
+
+`src/resource-limits.ts` is the single source of truth for limits exposed in
+`tools/list` and enforced by input validation, corpus checks, retrieval, and
+response serialization. This prevents a schema/runtime mismatch. The server
+rejects oversized stdio frames before they reach a tool handler.
+
+`src/index.ts` owns process signals, stdin EOF, transport errors, and the
+idempotent shutdown seam in `src/lifecycle.ts`. Cleanup is bounded to one
+second and never writes diagnostics to stdout. Optional stderr diagnostics are
+event names only and are disabled unless `TAURI_DOCS_MCP_DIAGNOSTICS=1`.
 ```
 
 ## MCP transport
@@ -20,9 +32,9 @@ write protocol diagnostics to stdout.
 contract, and output/error envelope. This layer translates MCP requests to
 retrieval calls; it does not know how the corpus is stored or scored.
 
-The public contract currently contains one read-only tool,
-`search_tauri_docs`, with a bounded query and result limit. Preserve its
-shape and error codes when changing internals.
+The public contract contains two read-only tools and one compatibility tool,
+all with bounded query and result limits. Preserve their shapes and error codes
+when changing internals.
 
 ## Corpus
 

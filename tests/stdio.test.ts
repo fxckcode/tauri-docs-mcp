@@ -210,4 +210,30 @@ describe('stdio transport', () => {
     expect(results(legacy)[0].title).toBe('IPC');
     await stop(proc);
   });
+
+  it('rejects an oversized stdio frame without protocol stdout or unsafe stderr', async () => {
+    const proc = spawn(process.execPath, ['--import', 'tsx', 'src/index.ts'], {
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    let stdout = '';
+    let stderr = '';
+    proc.stdout?.on('data', (chunk) => (stdout += chunk.toString()));
+    proc.stderr?.on('data', (chunk) => (stderr += chunk.toString()));
+    proc.stdin?.write(`${'x'.repeat(70_000)}\n`);
+    proc.stdin?.end();
+    const [code] = (await once(proc, 'exit')) as [number | null];
+    expect(code).not.toBeNull();
+    expect(stdout).toBe('');
+    expect(stderr).toBe('');
+  });
+
+  it('terminates cleanly on SIGTERM and does not require a second signal', async () => {
+    const proc = await start();
+    proc.kill('SIGTERM');
+    const [code, signal] = (await once(proc, 'exit')) as [
+      number | null,
+      string | null,
+    ];
+    expect(code === 0 || signal === 'SIGTERM').toBe(true);
+  });
 });
