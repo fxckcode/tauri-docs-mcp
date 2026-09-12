@@ -55,6 +55,30 @@ async function stop(proc: ReturnType<typeof spawn>) {
   await once(proc, 'exit');
 }
 
+async function expectBoundedExit(input: string) {
+  const proc = spawn(process.execPath, ['--import', 'tsx', 'src/index.ts'], {
+    stdio: ['pipe', 'pipe', 'pipe'],
+  });
+  let stdout = '';
+  let stderr = '';
+  proc.stdout?.on('data', (chunk) => (stdout += chunk.toString()));
+  proc.stderr?.on('data', (chunk) => (stderr += chunk.toString()));
+  proc.stdin?.write(input);
+  const exit = once(proc, 'exit').then(([code, signal]) => ({ code, signal }));
+  const result = await Promise.race([
+    exit,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => {
+        proc.kill('SIGKILL');
+        reject(new Error('process did not exit within 2 seconds'));
+      }, 2_000),
+    ),
+  ]);
+  expect(result).toBeDefined();
+  expect(stdout).toBe('');
+  expect(stderr).toBe('');
+}
+
 function body(response: JsonRpcResponse) {
   return JSON.parse(response.result.content![0].text) as Record<
     string,
@@ -209,5 +233,39 @@ describe('stdio transport', () => {
     expect(legacy.result.isError).not.toBe(true);
     expect(results(legacy)[0].title).toBe('IPC');
     await stop(proc);
+  });
+
+  it('terminates on malformed JSON instead of waiting indefinitely', async () => {
+    await expectBoundedExit('{\n');
+  });
+
+  it('terminates on malformed JSON-RPC shape instead of waiting indefinitely', async () => {
+    await expectBoundedExit('{}\n');
+  });
+
+  it('rejects an oversized stdio frame without protocol stdout or unsafe stderr', async () => {
+    const proc = spawn(process.execPath, ['--import', 'tsx', 'src/index.ts'], {
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    let stdout = '';
+    let stderr = '';
+    proc.stdout?.on('data', (chunk) => (stdout += chunk.toString()));
+    proc.stderr?.on('data', (chunk) => (stderr += chunk.toString()));
+    proc.stdin?.write(`${'x'.repeat(70_000)}\n`);
+    proc.stdin?.end();
+    const [code] = (await once(proc, 'exit')) as [number | null];
+    expect(code).not.toBeNull();
+    expect(stdout).toBe('');
+    expect(stderr).toBe('');
+  });
+
+  it('terminates cleanly on SIGTERM and does not require a second signal', async () => {
+    const proc = await start();
+    proc.kill('SIGTERM');
+    const [code, signal] = (await once(proc, 'exit')) as [
+      number | null,
+      string | null,
+    ];
+    expect(code === 0 || signal === 'SIGTERM').toBe(true);
   });
 });

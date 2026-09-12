@@ -7,6 +7,7 @@ import {
   McpError,
 } from '@modelcontextprotocol/sdk/types.js';
 import { searchDocs, validateSearchInput } from './search.js';
+import { RESOURCE_LIMITS, serializeBounded } from './resource-limits.js';
 import {
   QUERY_INPUT_SCHEMA,
   RESOLVE_INPUT_SCHEMA,
@@ -58,13 +59,14 @@ export function createServer(): Server {
             query: {
               type: 'string',
               minLength: 1,
-              maxLength: 200,
+              maxLength: RESOURCE_LIMITS.maxQueryLength,
+              maxTerms: RESOURCE_LIMITS.maxTermCount,
               description: 'Search terms, 1-200 characters.',
             },
             limit: {
               type: 'integer',
               minimum: 1,
-              maximum: 10,
+              maximum: RESOURCE_LIMITS.maxResultCount,
               description: 'Maximum results, from 1 to 10; defaults to 5.',
             },
           },
@@ -79,7 +81,12 @@ export function createServer(): Server {
       },
     ],
   }));
-  server.setRequestHandler(CallToolRequestSchema, async (request) => {
+  server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
+    if (extra.signal.aborted)
+      return applicationError({
+        code: 'CANCELLED',
+        message: 'request cancelled before execution',
+      });
     if (request.params.name === 'resolve_tauri_docs') {
       const validation = validateResolveInput(request.params.arguments);
       if (!validation.ok) return applicationError(validation.error);
@@ -109,7 +116,10 @@ export function createServer(): Server {
 }
 
 function toolResult(value: unknown) {
-  return { content: [{ type: 'text' as const, text: JSON.stringify(value) }] };
+  const serialized = serializeBounded(value);
+  return typeof serialized === 'string'
+    ? { content: [{ type: 'text' as const, text: serialized }] }
+    : applicationError(serialized);
 }
 
 function applicationError(error: unknown) {
