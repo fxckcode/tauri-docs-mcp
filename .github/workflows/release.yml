@@ -25,7 +25,20 @@ jobs:
           registry-url: https://registry.npmjs.org
           cache: npm
       - run: npm ci
-      - run: npm run check:release-metadata
+      - name: Validate official MCP Registry metadata schema
+        run: |
+          curl --fail --location --proto '=https' --tlsv1.2 \
+            "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json" \
+            --output "$RUNNER_TEMP/server.schema.json"
+          npx --yes ajv-cli@5 validate \
+            -s "$RUNNER_TEMP/server.schema.json" \
+            -d server.json --spec=draft7 --strict=false
+      - name: Resolve and validate release version
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/v}"
+          test "$GITHUB_REF" = "refs/tags/v$VERSION"
+          printf 'VERSION=%s\n' "$VERSION" >> "$GITHUB_ENV"
+          npm run check:release-metadata -- --version "$VERSION"
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run build
@@ -36,8 +49,10 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/package"
           npm pack --json --pack-destination "$RUNNER_TEMP/package" > "$RUNNER_TEMP/package/pack.json"
-          node -e "const fs=require('node:fs'); const p=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP + '/package/pack.json')); if (p.length !== 1 || p[0].name !== 'tauri-docs-mcp' || p[0].version !== '0.2.0') throw new Error('unexpected package metadata'); console.log(p[0].filename)"
-          npm run package:smoke -- "$RUNNER_TEMP/package/tauri-docs-mcp-0.2.0.tgz"
+          node -e "const fs=require('node:fs'); const p=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP + '/package/pack.json')); if (p.length !== 1 || p[0].name !== 'tauri-docs-mcp' || p[0].version !== process.env.VERSION) throw new Error('unexpected package metadata'); console.log(p[0].filename)"
+          PACKAGE_TARBALL="$RUNNER_TEMP/package/tauri-docs-mcp-$VERSION.tgz"
+          test -f "$PACKAGE_TARBALL"
+          npm run package:smoke -- "$PACKAGE_TARBALL"
       - name: Publish immutable npm package with provenance
         run: npm publish --provenance --access public
         env:

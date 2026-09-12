@@ -14,6 +14,18 @@ export type ReleaseMetadata = {
   registryPackageVersion: string;
 };
 
+const RELEASE_TAG_PATTERN = /^refs\/tags\/v(\d+\.\d+\.\d+)$/;
+
+export function parseReleaseTag(ref: string): string {
+  const match = RELEASE_TAG_PATTERN.exec(ref);
+  if (!match) {
+    throw new Error(
+      `release ref is not an immutable semver release tag: ${ref}`,
+    );
+  }
+  return match[1];
+}
+
 type JsonObject = Record<string, unknown>;
 const root = process.cwd();
 const json = async (path: string) =>
@@ -80,6 +92,20 @@ export function assertVersionConsistency(
   return errors.length ? { ok: false, errors } : { ok: true };
 }
 
+export function assertExpectedVersion(
+  metadata: ReleaseMetadata,
+  expectedVersion: string,
+): { ok: true } | { ok: false; errors: string[] } {
+  return metadata.packageVersion === expectedVersion
+    ? { ok: true }
+    : {
+        ok: false,
+        errors: [
+          `package version ${metadata.packageVersion} does not match release tag version ${expectedVersion}`,
+        ],
+      };
+}
+
 export async function loadConfigExamples(): Promise<JsonObject[]> {
   const names = [
     'generic.json',
@@ -92,6 +118,7 @@ export async function loadConfigExamples(): Promise<JsonObject[]> {
 
 export function validateConfigExamples(
   examples: JsonObject[],
+  packageVersion: string,
 ): { ok: true } | { ok: false; errors: string[] } {
   const errors: string[] = [];
   for (const [index, example] of examples.entries()) {
@@ -102,9 +129,11 @@ export function validateConfigExamples(
     if (
       config?.command !== 'npx' ||
       !Array.isArray(args) ||
-      args.join(' ') !== '--yes tauri-docs-mcp@0.2.0'
+      args.join(' ') !== `--yes tauri-docs-mcp@${packageVersion}`
     )
-      errors.push(`example ${index} must pin tauri-docs-mcp@0.2.0 via npx`);
+      errors.push(
+        `example ${index} must pin tauri-docs-mcp@${packageVersion} via npx`,
+      );
     if (
       config &&
       Object.keys(config).some((key) => !['command', 'args'].includes(key))
@@ -116,9 +145,25 @@ export function validateConfigExamples(
 
 if (process.argv[1]?.endsWith('check-release-metadata.ts')) {
   const metadata = await loadReleaseMetadata();
-  const result = assertVersionConsistency(metadata);
-  if (!result.ok) {
-    console.error(result.errors.join('\n'));
+  const examples = await loadConfigExamples();
+  const exampleResult = validateConfigExamples(
+    examples,
+    metadata.packageVersion,
+  );
+  const expectedVersionIndex = process.argv.indexOf('--version');
+  const expectedVersion =
+    expectedVersionIndex >= 0
+      ? process.argv[expectedVersionIndex + 1]
+      : undefined;
+  const result = expectedVersion
+    ? assertExpectedVersion(metadata, expectedVersion)
+    : assertVersionConsistency(metadata);
+  const errors = [
+    ...(result.ok ? [] : result.errors),
+    ...(exampleResult.ok ? [] : exampleResult.errors),
+  ];
+  if (errors.length) {
+    console.error(errors.join('\n'));
     process.exitCode = 1;
   } else
     console.log(
