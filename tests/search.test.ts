@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { DOC_INDEX, searchDocs, validateSearchInput } from '../src/search.js';
+import { retrieve, type RetrievalDocument } from '../src/retrieval.js';
+
+const adversarialDocument: RetrievalDocument = {
+  title: 'Generic',
+  section: 'Guide > Generic',
+  context: 'ordinary body',
+  keywords: ['alias'],
+  url: 'https://v2.tauri.app/unique-anchor/',
+};
 
 describe('search_tauri_docs search logic', () => {
   it('ranks exact title matches before contextual matches and returns bounded canonical results', () => {
@@ -75,5 +84,30 @@ describe('search_tauri_docs search logic', () => {
   it('returns no results for punctuation-only or unknown terms', () => {
     expect(searchDocs({ query: '!!!', limit: 5 })).toEqual([]);
     expect(searchDocs({ query: 'not-in-corpus', limit: 5 })).toEqual([]);
+  });
+
+  it('finds normalized URL path and anchor tokens without fetching the URL', () => {
+    expect(retrieve([adversarialDocument], 'unique-anchor', 10)).toHaveLength(
+      1,
+    );
+    expect(retrieve([adversarialDocument], 'v2.tauri.app', 10)).toHaveLength(1);
+  });
+
+  it('keeps weak substring matches as lower-ranked fallback results', () => {
+    const exact: RetrievalDocument = {
+      ...adversarialDocument,
+      title: 'Configuration',
+      url: 'https://v2.tauri.app/config/',
+    };
+    const weak: RetrievalDocument = {
+      ...adversarialDocument,
+      title: 'Generic',
+      context: 'configuration details',
+      url: 'https://v2.tauri.app/other/',
+    };
+    const results = retrieve([weak, exact], 'configur', 10);
+    expect(results).toHaveLength(2);
+    expect(results[0].document.title).toBe('Configuration');
+    expect(results[1].document.title).toBe('Generic');
   });
 });

@@ -35,6 +35,10 @@ function containsWord(value: string, term: string): boolean {
   return value === term || value.split(' ').includes(term);
 }
 
+function containsSubstring(value: string, term: string): boolean {
+  return value.split(' ').some((token) => token.includes(term));
+}
+
 function scoreDocument<T extends RetrievalDocument>(
   document: T,
   query: string,
@@ -56,12 +60,14 @@ function scoreDocument<T extends RetrievalDocument>(
   const section = normalizeText(document.section);
   const body = normalizeText(document.context);
   const aliases = document.keywords.map(normalizeText);
+  const url = normalizeText(document.url);
   const fields: Array<[string, string]> = [
     ['title', title],
     ['heading', heading],
     ['section', section],
     ['body', body],
     ['alias', aliases.join(' ')],
+    ['url', url],
   ];
   const matches = new Set<string>();
   const matchedTerms = new Set<string>();
@@ -84,7 +90,14 @@ function scoreDocument<T extends RetrievalDocument>(
       containsWord(heading, term) ||
       containsWord(section, term) ||
       aliases.some((alias) => containsWord(alias, term)) ||
-      containsWord(body, term)
+      containsWord(body, term) ||
+      containsWord(url, term) ||
+      containsSubstring(title, term) ||
+      containsSubstring(heading, term) ||
+      containsSubstring(section, term) ||
+      aliases.some((alias) => containsSubstring(alias, term)) ||
+      containsSubstring(body, term) ||
+      containsSubstring(url, term)
     )
       matchedTerms.add(term);
     if (containsWord(title, term)) {
@@ -106,6 +119,37 @@ function scoreDocument<T extends RetrievalDocument>(
     if (containsWord(body, term)) {
       score += 15;
       matches.add('body');
+    }
+    if (containsWord(url, term)) {
+      score += 75;
+      matches.add('url');
+    }
+    if (containsSubstring(title, term) && !containsWord(title, term)) {
+      score += 35;
+      matches.add('title');
+    }
+    if (containsSubstring(heading, term) && !containsWord(heading, term)) {
+      score += 30;
+      matches.add('heading');
+    }
+    if (containsSubstring(section, term) && !containsWord(section, term)) {
+      score += 20;
+      matches.add('section');
+    }
+    if (
+      aliases.some((alias) => containsSubstring(alias, term)) &&
+      !aliases.some((alias) => containsWord(alias, term))
+    ) {
+      score += 18;
+      matches.add('alias');
+    }
+    if (containsSubstring(body, term) && !containsWord(body, term)) {
+      score += 5;
+      matches.add('body');
+    }
+    if (containsSubstring(url, term) && !containsWord(url, term)) {
+      score += 8;
+      matches.add('url');
     }
   }
   if (matchedTerms.size !== terms.length) score = 0;
