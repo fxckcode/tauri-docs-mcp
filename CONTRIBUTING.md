@@ -50,6 +50,21 @@ stdio transport only, and a checked-in corpus sourced from official Tauri 2
 documentation. Changes adding tools, writes, live crawling, hosted HTTP,
 authentication, or telemetry require a separately approved design.
 
+## Corpus regeneration
+
+Review the official Tauri docs source and pin a new commit before changing
+`corpus/manifest.json`. Preserve the source revision, fetch timestamp, SHA-256
+content hash, and license notice. Then run:
+
+```bash
+npm run ingest:docs
+npm run validate:corpus
+```
+
+Never overwrite an existing snapshot directory. Add a new immutable
+`tauri-2@<revision>` snapshot instead. The default test suite and runtime are
+offline; source health checks, if needed, belong in a separate bounded command.
+
 ## Security
 
 Never disclose a vulnerability in a public issue or pull request. Follow

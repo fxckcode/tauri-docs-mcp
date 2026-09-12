@@ -109,6 +109,25 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution rules and
 [SUPPORT.md](SUPPORT.md) for supported use cases. Report vulnerabilities
 privately as described in [SECURITY.md](SECURITY.md).
 
+## Corpus maintenance
+
+The runtime reads only the checked-in generated snapshot under `corpus/`; it
+never fetches documentation URLs. The approved manifest records canonical URLs,
+section hierarchy, Tauri version, source revision/freshness metadata, and a
+SHA-256 hash for each concise excerpt. The source revision is immutable, so a
+future snapshot must use a new `tauri-2@<revision>` directory.
+
+After an approved source review, regenerate and validate deterministically:
+
+```bash
+npm run ingest:docs
+npm run validate:corpus
+```
+
+`validate:corpus` fails if the manifest is unsafe or incomplete, if content
+hashes drift, or if the generated artifact differs from its manifest. Source
+and license attribution is preserved in [corpus/NOTICES.md](corpus/NOTICES.md).
+
 ## Sources
 
 - [MCP transport concepts](https://modelcontextprotocol.io/docs/concepts/transports)

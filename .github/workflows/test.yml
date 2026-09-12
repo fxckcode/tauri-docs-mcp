@@ -38,6 +38,7 @@ jobs:
       - run: npm run typecheck
       - run: npm run build
       - run: npm run format:check
+      - run: npm run validate:corpus
       - run: npm test
       - name: Pack and verify runtime allowlist
         env:

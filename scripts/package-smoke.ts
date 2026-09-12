@@ -19,6 +19,14 @@ const EXPECTED_FILES = new Set([
   'dist/src/server.js.map',
   'dist/src/server.d.ts',
   'dist/src/server.d.ts.map',
+  'dist/src/corpus.js',
+  'dist/src/corpus.js.map',
+  'dist/src/corpus.d.ts',
+  'dist/src/corpus.d.ts.map',
+  'dist/corpus/tauri-2@58194ceb69424c4332b2780b196ced3a6fffb32b/index.json',
+  'corpus/manifest.json',
+  'corpus/NOTICES.md',
+  'corpus/tauri-2@58194ceb69424c4332b2780b196ced3a6fffb32b/index.json',
 ]);
 
 export function assertPackContents(files: readonly string[]): void {

@@ -25,7 +25,8 @@
   "files": [
     "dist",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "corpus"
   ],
   "bin": {
     "tauri-docs-mcp": "dist/src/index.js"
@@ -38,7 +39,9 @@
     "test:watch": "vitest",
     "format:check": "prettier --check .",
     "format": "prettier --write .",
-    "package:smoke": "tsx scripts/package-smoke.ts"
+    "package:smoke": "tsx scripts/package-smoke.ts",
+    "ingest:docs": "tsx scripts/ingest-docs.ts",
+    "validate:corpus": "tsx scripts/validate-corpus.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
