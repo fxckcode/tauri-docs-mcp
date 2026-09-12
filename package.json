@@ -1,6 +1,7 @@
 {
   "name": "tauri-docs-mcp",
-  "version": "0.1.0",
+  "version": "0.2.0",
+  "mcpName": "io.github.fxckcode/tauri-docs-mcp",
   "description": "Read-only MCP search server for official Tauri 2 documentation.",
   "type": "module",
   "repository": {
@@ -42,7 +43,8 @@
     "package:smoke": "tsx scripts/package-smoke.ts",
     "ingest:docs": "tsx scripts/ingest-docs.ts",
     "validate:corpus": "tsx scripts/validate-corpus.ts",
-    "benchmark:retrieval": "tsx scripts/benchmark-retrieval.ts"
+    "benchmark:retrieval": "tsx scripts/benchmark-retrieval.ts",
+    "check:release-metadata": "tsx scripts/check-release-metadata.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",

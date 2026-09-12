@@ -15,6 +15,10 @@ on:
       - '.github/workflows/**'
       - 'README.md'
       - 'CONTRIBUTING.md'
+      - 'CHANGELOG.md'
+      - 'server.json'
+      - 'examples/mcp/**'
+      - 'skills/tauri-docs-mcp/**'
   workflow_dispatch:
 
 permissions:
@@ -39,6 +43,7 @@ jobs:
       - run: npm run build
       - run: npm run format:check
       - run: npm run validate:corpus
+      - run: npm run check:release-metadata
       - run: npm test
       - name: Pack and verify runtime allowlist
         env:

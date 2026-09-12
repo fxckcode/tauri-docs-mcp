@@ -1,0 +1,9 @@
+{
+  "servers": {
+    "tauri-docs": {
+      "command": "npx",
+      "args": ["--yes", "tauri-docs-mcp@0.2.0"]
+    }
+  },
+  "inputs": []
+}

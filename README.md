@@ -49,6 +49,11 @@ Configure an MCP client to launch the installed binary over stdio:
 }
 ```
 
+Portable configurations for generic MCP clients, Claude Desktop, Cursor, and
+VS Code are in [`examples/mcp/`](examples/mcp/). They pin the package version
+and use stdio only. Installable agent guidance is in
+[`skills/tauri-docs-mcp/SKILL.md`](skills/tauri-docs-mcp/SKILL.md).
+
 The server writes MCP JSON-RPC messages only to stdout. It does not start an
 HTTP listener. Diagnostics are disabled by default; opt in with
 `TAURI_DOCS_MCP_DIAGNOSTICS=1` and they are written to stderr as event names
@@ -159,6 +164,16 @@ rm -rf .tmp
 See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution rules and
 [SUPPORT.md](SUPPORT.md) for supported use cases. Report vulnerabilities
 privately as described in [SECURITY.md](SECURITY.md).
+
+## Releases and registry
+
+The release workflow runs from a version tag and checks package, immutable
+corpus metadata, registry metadata, and the pack allowlist before publishing.
+npm publishing uses provenance/trusted publishing where enabled, then runs a
+fresh published-package smoke gate. Official MCP Registry publication is a
+separately protected environment chained after the successful npm job. No
+release is published from pull requests. See [CHANGELOG.md](CHANGELOG.md) for
+the release and MCP contract-change process.
 
 ## Corpus maintenance
 

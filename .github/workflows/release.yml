@@ -1,0 +1,88 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  package:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22.14.0
+          registry-url: https://registry.npmjs.org
+          cache: npm
+      - run: npm ci
+      - name: Validate official MCP Registry metadata schema
+        run: |
+          curl --fail --location --proto '=https' --tlsv1.2 \
+            "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json" \
+            --output "$RUNNER_TEMP/server.schema.json"
+          npx --yes ajv-cli@5 validate \
+            -s "$RUNNER_TEMP/server.schema.json" \
+            -d server.json --spec=draft7 --strict=false
+      - name: Resolve and validate release version
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/v}"
+          test "$GITHUB_REF" = "refs/tags/v$VERSION"
+          printf 'VERSION=%s\n' "$VERSION" >> "$GITHUB_ENV"
+          npm run check:release-metadata -- --version "$VERSION"
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm run format:check
+      - run: npm run validate:corpus
+      - run: npm test
+      - name: Inspect package contents
+        run: |
+          mkdir -p "$RUNNER_TEMP/package"
+          npm pack --json --pack-destination "$RUNNER_TEMP/package" > "$RUNNER_TEMP/package/pack.json"
+          node -e "const fs=require('node:fs'); const p=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP + '/package/pack.json')); if (p.length !== 1 || p[0].name !== 'tauri-docs-mcp' || p[0].version !== process.env.VERSION) throw new Error('unexpected package metadata'); console.log(p[0].filename)"
+          PACKAGE_TARBALL="$RUNNER_TEMP/package/tauri-docs-mcp-$VERSION.tgz"
+          test -f "$PACKAGE_TARBALL"
+          npm run package:smoke -- "$PACKAGE_TARBALL"
+      - name: Publish immutable npm package with provenance
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Smoke test the exact published package
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/v}"
+          test "$(npm view "tauri-docs-mcp@$VERSION" version)" = "$VERSION"
+          mkdir -p "$RUNNER_TEMP/published"
+          npm pack "tauri-docs-mcp@$VERSION" --pack-destination "$RUNNER_TEMP/published"
+          npm run package:smoke -- "$RUNNER_TEMP/published/tauri-docs-mcp-$VERSION.tgz"
+
+  registry:
+    needs: package
+    runs-on: ubuntu-24.04
+    environment: mcp-registry
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22.14.0
+      - name: Install official MCP publisher
+        run: |
+          curl --fail --location --proto '=https' --tlsv1.2 \
+            "https://github.com/modelcontextprotocol/registry/releases/download/v1.8.1/mcp-publisher_linux_amd64.tar.gz" \
+            --output "$RUNNER_TEMP/mcp-publisher.tar.gz"
+          printf '%s  %s\n' 'a06c9096dcb9727c13555b6be26c7effa707b01f06a4c561ba7a3635443cf2cc' "$RUNNER_TEMP/mcp-publisher.tar.gz" | sha256sum --check
+          tar -xzf "$RUNNER_TEMP/mcp-publisher.tar.gz" mcp-publisher
+      - run: ./mcp-publisher login github-oidc
+      - run: ./mcp-publisher publish
