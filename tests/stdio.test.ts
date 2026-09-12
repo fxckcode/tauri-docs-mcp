@@ -2,7 +2,18 @@ import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { describe, expect, it } from 'vitest';
 
-function send(proc: ReturnType<typeof spawn>, message: object): Promise<any> {
+type JsonRpcResponse = {
+  result: {
+    serverInfo?: { name: string; version: string };
+    isError?: boolean;
+    content?: Array<{ text: string }>;
+  };
+};
+
+function send(
+  proc: ReturnType<typeof spawn>,
+  message: object,
+): Promise<JsonRpcResponse> {
   return new Promise((resolve, reject) => {
     const onData = (chunk: Buffer) => {
       for (const line of chunk.toString().split('\n')) {
@@ -33,7 +44,7 @@ describe('stdio transport', () => {
         clientInfo: { name: 'test', version: '1' },
       },
     });
-    expect(initialized.result.serverInfo.name).toBe('tauri-docs-mcp');
+    expect(initialized.result.serverInfo!.name).toBe('tauri-docs-mcp');
 
     proc.stdin?.write(
       `${JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized', params: {} })}\n`,
@@ -49,7 +60,7 @@ describe('stdio transport', () => {
     });
     expect(response.result.isError).not.toBe(true);
     expect(
-      JSON.parse(response.result.content[0].text).results[0].url,
+      JSON.parse(response.result.content![0].text).results[0].url,
     ).toContain('v2.tauri.app');
     proc.kill();
     await once(proc, 'exit');
@@ -83,7 +94,7 @@ describe('stdio transport', () => {
     });
 
     expect(response.result.isError).toBe(true);
-    expect(JSON.parse(response.result.content[0].text)).toEqual({
+    expect(JSON.parse(response.result.content![0].text)).toEqual({
       error: {
         code: 'INVALID_LIMIT',
         message: 'limit must be an integer between 1 and 10',

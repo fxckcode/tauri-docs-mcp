@@ -118,7 +118,7 @@ export function validateSearchInput(input: unknown): SearchValidation {
   if (
     !input ||
     typeof input !== 'object' ||
-    typeof (input as any).query !== 'string'
+    typeof (input as Record<string, unknown>).query !== 'string'
   ) {
     return {
       ok: false,
@@ -128,7 +128,8 @@ export function validateSearchInput(input: unknown): SearchValidation {
       },
     };
   }
-  const query = (input as any).query.trim();
+  const value = input as Record<string, unknown>;
+  const query = (value.query as string).trim();
   if (query.length < 1 || query.length > 200) {
     return {
       ok: false,
@@ -138,8 +139,13 @@ export function validateSearchInput(input: unknown): SearchValidation {
       },
     };
   }
-  const limit = (input as any).limit ?? 5;
-  if (!Number.isInteger(limit) || limit < 1 || limit > 10) {
+  const limit = value.limit ?? 5;
+  if (
+    typeof limit !== 'number' ||
+    !Number.isInteger(limit) ||
+    limit < 1 ||
+    limit > 10
+  ) {
     return {
       ok: false,
       error: {
