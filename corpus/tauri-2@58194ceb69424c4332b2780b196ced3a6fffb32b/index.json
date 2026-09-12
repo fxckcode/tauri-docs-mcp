@@ -1,0 +1,177 @@
+{
+  "generated": true,
+  "snapshot": "tauri-2@58194ceb69424c4332b2780b196ced3a6fffb32b",
+  "generatedAt": "2026-09-11T00:00:00.000Z",
+  "sourceRevision": "58194ceb69424c4332b2780b196ced3a6fffb32b",
+  "entries": [
+    {
+      "title": "Capabilities",
+      "url": "https://v2.tauri.app/security/capabilities/",
+      "section": "Security > Capabilities",
+      "context": "Define permissions and scopes for Tauri 2 applications.",
+      "version": "Tauri 2",
+      "versionSensitive": true,
+      "sourceRevision": "58194ceb69424c4332b2780b196ced3a6fffb32b",
+      "fetchedAt": "2026-09-11T00:00:00.000Z",
+      "contentHash": "sha256:de1e0733807882f984d71ef4b52a35e1980636b7381cc41f70d8d2c540f820cb",
+      "keywords": [
+        "capabilities",
+        "permissions",
+        "security",
+        "scope"
+      ]
+    },
+    {
+      "title": "Window Customization",
+      "url": "https://v2.tauri.app/learn/window-customization/",
+      "section": "Learn > Window Customization",
+      "context": "Configure native windows, decorations, size, and behavior.",
+      "version": "Tauri 2",
+      "versionSensitive": true,
+      "sourceRevision": "58194ceb69424c4332b2780b196ced3a6fffb32b",
+      "fetchedAt": "2026-09-11T00:00:00.000Z",
+      "contentHash": "sha256:d904f627d5cecb1561dd9309a0fb044b3c77505b0fcd67e36623a2fa7694adec",
+      "keywords": [
+        "window",
+        "windows",
+        "customization",
+        "decorations"
+      ]
+    },
+    {
+      "title": "IPC",
+      "url": "https://v2.tauri.app/concept/inter-process-communication/",
+      "section": "Concepts > Inter-Process Communication",
+      "context": "Communicate between the webview frontend and Rust backend with commands and events.",
+      "version": "Tauri 2",
+      "versionSensitive": true,
+      "sourceRevision": "58194ceb69424c4332b2780b196ced3a6fffb32b",
+      "fetchedAt": "2026-09-11T00:00:00.000Z",
+      "contentHash": "sha256:64ef5cb8553b16d5450c7e4edf486845f3a270f7e30d725982bb27d27b2f6b93",
+      "keywords": [
+        "ipc",
+        "invoke",
+        "commands",
+        "events",
+        "communication"
+      ]
+    },
+    {
+      "title": "Calling Rust from the Frontend",
+      "url": "https://v2.tauri.app/develop/calling-rust/",
+      "section": "Develop > Calling Rust",
+      "context": "Invoke registered Rust commands from JavaScript or TypeScript.",
+      "version": "Tauri 2",
+      "versionSensitive": true,
+      "sourceRevision": "58194ceb69424c4332b2780b196ced3a6fffb32b",
+      "fetchedAt": "2026-09-11T00:00:00.000Z",
+      "contentHash": "sha256:216952c467359580b2d2e4c2791e2c2504abbe7b83063bfc8d78c62f1c6945ca",
+      "keywords": [
+        "rust",
+        "frontend",
+        "invoke",
+        "commands"
+      ]
+    },
+    {
+      "title": "Project Structure",
+      "url": "https://v2.tauri.app/start/project-structure/",
+      "section": "Start > Project Structure",
+      "context": "Understand the Tauri application and source layout.",
+      "version": "Tauri 2",
+      "versionSensitive": true,
+      "sourceRevision": "58194ceb69424c4332b2780b196ced3a6fffb32b",
+      "fetchedAt": "2026-09-11T00:00:00.000Z",
+      "contentHash": "sha256:f711aab532bd40284ce6a007162643458925e3ed875d5bdca39c17129a434633",
+      "keywords": [
+        "project",
+        "structure",
+        "src-tauri",
+        "layout"
+      ]
+    },
+    {
+      "title": "Configuration",
+      "url": "https://v2.tauri.app/reference/config/",
+      "section": "Reference > Configuration",
+      "context": "Configure Tauri using tauri.conf.json and platform-specific settings.",
+      "version": "Tauri 2",
+      "versionSensitive": true,
+      "sourceRevision": "58194ceb69424c4332b2780b196ced3a6fffb32b",
+      "fetchedAt": "2026-09-11T00:00:00.000Z",
+      "contentHash": "sha256:053a3bd9b2765c2e2932a10c19785b1c3f28fe395018dfddc0e7a1c9bb61a1f3",
+      "keywords": [
+        "configuration",
+        "tauri.conf.json",
+        "config"
+      ]
+    },
+    {
+      "title": "Plugins",
+      "url": "https://v2.tauri.app/develop/plugins/",
+      "section": "Develop > Plugins",
+      "context": "Extend Tauri applications with official and custom plugins.",
+      "version": "Tauri 2",
+      "versionSensitive": true,
+      "sourceRevision": "58194ceb69424c4332b2780b196ced3a6fffb32b",
+      "fetchedAt": "2026-09-11T00:00:00.000Z",
+      "contentHash": "sha256:131aeede33e896318f8aecc52d91d55a3a766e9b129f8f4c9a12d0b5f6a9dc28",
+      "keywords": [
+        "plugins",
+        "plugin",
+        "extend"
+      ]
+    },
+    {
+      "title": "State Management",
+      "url": "https://v2.tauri.app/develop/state-management/",
+      "section": "Develop > State Management",
+      "context": "Manage shared application state and access it from commands.",
+      "version": "Tauri 2",
+      "versionSensitive": true,
+      "sourceRevision": "58194ceb69424c4332b2780b196ced3a6fffb32b",
+      "fetchedAt": "2026-09-11T00:00:00.000Z",
+      "contentHash": "sha256:bfe90ad00d01a1a3b25e92c8af9b0aeb657acb219494be39f3a1abda0d92d93e",
+      "keywords": [
+        "state",
+        "management",
+        "mutex",
+        "managed state"
+      ]
+    },
+    {
+      "title": "Application Distribution",
+      "url": "https://v2.tauri.app/distribute/",
+      "section": "Distribute",
+      "context": "Bundle and distribute Tauri applications for supported platforms.",
+      "version": "Tauri 2",
+      "versionSensitive": true,
+      "sourceRevision": "58194ceb69424c4332b2780b196ced3a6fffb32b",
+      "fetchedAt": "2026-09-11T00:00:00.000Z",
+      "contentHash": "sha256:bf97dbc73e2b671df9b892005c44d4c477ac6f002065e0482dcf8ff38383155e",
+      "keywords": [
+        "distribution",
+        "bundle",
+        "release",
+        "installer"
+      ]
+    },
+    {
+      "title": "Tauri CLI",
+      "url": "https://v2.tauri.app/reference/cli/",
+      "section": "Reference > CLI",
+      "context": "Use the Tauri command-line interface to develop and build applications.",
+      "version": "Tauri 2",
+      "versionSensitive": true,
+      "sourceRevision": "58194ceb69424c4332b2780b196ced3a6fffb32b",
+      "fetchedAt": "2026-09-11T00:00:00.000Z",
+      "contentHash": "sha256:d0a87db8c97a82a76f9042232d8f37a3049b7064b2ca1f0e62836c9eaf4a011d",
+      "keywords": [
+        "cli",
+        "command line",
+        "build",
+        "dev"
+      ]
+    }
+  ]
+}
