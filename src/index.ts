@@ -23,7 +23,7 @@ const exit = async (reason: string, code = 0) => {
   exiting = true;
   log(`shutdown: ${reason}`);
   await shutdown();
-  process.exitCode = code;
+  process.exit(code);
 };
 
 transport.onerror = (error) => {
