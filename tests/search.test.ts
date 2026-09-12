@@ -45,4 +45,35 @@ describe('search_tauri_docs search logic', () => {
       ),
     ).toBe(true);
   });
+
+  it('normalizes punctuation, deduplicates terms, and prefers an exact phrase in a heading', () => {
+    const results = searchDocs({
+      query: 'TAURI.CONF.JSON tauri-conf-json',
+      limit: 3,
+    });
+    expect(results[0]).toMatchObject({ title: 'Configuration' });
+    expect(results[0].matches).toEqual(
+      expect.arrayContaining(['phrase', 'alias']),
+    );
+  });
+
+  it('searches aliases and code identifiers without relying on corpus insertion order', () => {
+    expect(searchDocs({ query: 'src-tauri', limit: 1 })[0].title).toBe(
+      'Project Structure',
+    );
+    expect(searchDocs({ query: 'tauri.conf.json', limit: 1 })[0].title).toBe(
+      'Configuration',
+    );
+    const urls = searchDocs({ query: 'commands invoke', limit: 3 }).map(
+      (x) => x.url,
+    );
+    expect(
+      searchDocs({ query: 'commands invoke', limit: 3 }).map((x) => x.url),
+    ).toEqual(urls);
+  });
+
+  it('returns no results for punctuation-only or unknown terms', () => {
+    expect(searchDocs({ query: '!!!', limit: 5 })).toEqual([]);
+    expect(searchDocs({ query: 'not-in-corpus', limit: 5 })).toEqual([]);
+  });
 });

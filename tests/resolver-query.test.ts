@@ -80,6 +80,25 @@ describe('content query', () => {
       error: { code: 'INVALID_INPUT' },
     });
   });
+
+  it('returns a bounded, match-centered snippet with an anchor for code identifiers', () => {
+    const result = queryDocs({ query: 'tauri.conf.json', limit: 1 });
+    expect(result.results[0]).toMatchObject({
+      title: 'Configuration',
+      anchor: 'config',
+      content: expect.stringContaining('tauri.conf.json'),
+      matches: expect.arrayContaining(['phrase', 'alias']),
+    });
+    expect(result.results[0].content.length).toBeLessThanOrEqual(1200);
+  });
+
+  it('ranks an exact phrase and section heading above weak body substrings', () => {
+    const result = queryDocs({ query: 'window customization', limit: 2 });
+    expect(result.results[0].title).toBe('Window Customization');
+    expect(result.results[0].matches).toEqual(
+      expect.arrayContaining(['phrase', 'heading']),
+    );
+  });
 });
 
 it('validates resolver input strictly', () => {

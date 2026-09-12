@@ -4,6 +4,7 @@ import {
   RESOURCE_LIMITS,
   validateResourceBounds,
 } from './resource-limits.js';
+import { retrieve } from './retrieval.js';
 
 for (const entry of generatedCorpus.entries) assertCorpusEntryBounds(entry);
 
@@ -15,6 +16,7 @@ export type DocEntry = {
   version: 'Tauri 2';
   versionSensitive: boolean;
   keywords: string[];
+  matches?: string[];
 };
 
 export const DOC_INDEX: readonly DocEntry[] = generatedCorpus.entries.map(
@@ -92,27 +94,9 @@ export function validateSearchInput(input: unknown): SearchValidation {
 export function searchDocs(input: SearchInput): DocEntry[] {
   const validation = validateSearchInput(input);
   if (!validation.ok) throw new Error(validation.error.message);
-  const terms = validation.value.query
-    .toLowerCase()
-    .split(/\s+/)
-    .slice(0, RESOURCE_LIMITS.maxTermCount);
-  return DOC_INDEX.map((entry, index) => {
-    const title = entry.title.toLowerCase();
-    const searchable = [title, entry.section, entry.context, ...entry.keywords]
-      .join(' ')
-      .toLowerCase();
-    const score = terms.reduce(
-      (total, term) =>
-        total +
-        (title === term ? 100 : title.includes(term) ? 50 : 0) +
-        (entry.keywords.includes(term) ? 30 : 0) +
-        (searchable.includes(term) ? 5 : 0),
-      0,
-    );
-    return { entry, score, index };
-  })
-    .filter(({ score }) => score > 0)
-    .sort((a, b) => b.score - a.score || a.index - b.index)
-    .slice(0, validation.value.limit)
-    .map(({ entry }) => entry);
+  return retrieve(
+    DOC_INDEX,
+    validation.value.query,
+    validation.value.limit,
+  ).map(({ document, matches }) => ({ ...document, matches }));
 }
