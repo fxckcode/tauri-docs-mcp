@@ -21,6 +21,7 @@ npm run build
 npm test
 npm run lint
 npm run format:check
+npm run check:release-metadata
 npm pack --dry-run
 ```
 
@@ -64,6 +65,23 @@ npm run validate:corpus
 Never overwrite an existing snapshot directory. Add a new immutable
 `tauri-2@<revision>` snapshot instead. The default test suite and runtime are
 offline; source health checks, if needed, belong in a separate bounded command.
+
+## Agent integrations
+
+Use the examples in `examples/mcp/` as portable stdio configurations. Agents
+should call `resolve_tauri_docs` before `query_tauri_docs`, select an immutable
+snapshot when reproducibility matters, and preserve returned canonical URLs,
+source revisions, and snapshot identifiers as citations. The compatibility
+`search_tauri_docs` tool remains supported. Do not expand this integration into
+hosted HTTP, OAuth, arbitrary URL fetching, writes, execution, or telemetry.
+
+## Release discipline
+
+`npm run check:release-metadata` must pass before a release. It checks
+`package.json`, `server.json`, `corpus/manifest.json`, and registry package
+metadata. A protected version tag runs the clean-checkout release workflow;
+pull requests never publish. Registry publication is gated after npm succeeds.
+See [CHANGELOG.md](CHANGELOG.md) for required contract and corpus notes.
 
 ## Security
 
