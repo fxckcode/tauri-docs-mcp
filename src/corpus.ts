@@ -65,6 +65,15 @@ export function canonicalizeUrl(value: string): string | undefined {
   }
 }
 
+function canonicalUrlKey(value: string): string | undefined {
+  const canonicalUrl = canonicalizeUrl(value);
+  if (!canonicalUrl) return undefined;
+  const parsed = new URL(canonicalUrl);
+  if (parsed.pathname.length > 1 && parsed.pathname.endsWith('/'))
+    parsed.pathname = parsed.pathname.slice(0, -1);
+  return parsed.href;
+}
+
 export function validateManifest(
   value: unknown,
 ): { ok: true } | { ok: false; errors: string[] } {
@@ -100,6 +109,8 @@ export function validateManifest(
     const item = entry as Partial<ManifestEntry>;
     const canonicalUrl =
       typeof item.url === 'string' ? canonicalizeUrl(item.url) : undefined;
+    const urlKey =
+      typeof item.url === 'string' ? canonicalUrlKey(item.url) : undefined;
     if (!canonicalUrl) {
       let parsed: URL | undefined;
       try {
@@ -111,9 +122,8 @@ export function validateManifest(
         errors.push(`${prefix} URL must use HTTPS`);
       errors.push(`${prefix} URL is not allowlisted`);
     }
-    if (canonicalUrl && urls.has(canonicalUrl))
-      errors.push(`${prefix} URL is duplicated`);
-    if (canonicalUrl) urls.add(canonicalUrl);
+    if (urlKey && urls.has(urlKey)) errors.push(`${prefix} URL is duplicated`);
+    if (urlKey) urls.add(urlKey);
     if (typeof item.title !== 'string' || !item.title.trim())
       errors.push(`${prefix} title is required`);
     if (

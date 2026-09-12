@@ -92,6 +92,38 @@ describe('corpus pipeline', () => {
     ).toMatchObject({ ok: false });
   });
 
+  it('rejects trailing-slash-equivalent URL duplicates without collapsing meaningful paths', () => {
+    const canonicalDuplicate = {
+      ...validManifest,
+      entries: [
+        {
+          ...validManifest.entries[0],
+          url: 'https://v2.tauri.app/security/capabilities',
+        },
+        {
+          ...validManifest.entries[0],
+          url: 'https://v2.tauri.app/security/capabilities/',
+        },
+      ],
+    };
+    expect(validateManifest(canonicalDuplicate)).toMatchObject({ ok: false });
+
+    const meaningfulPathVariants = {
+      ...validManifest,
+      entries: [
+        {
+          ...validManifest.entries[0],
+          url: 'https://v2.tauri.app/security/capabilities',
+        },
+        {
+          ...validManifest.entries[0],
+          url: 'https://v2.tauri.app/security/capabilities//',
+        },
+      ],
+    };
+    expect(validateManifest(meaningfulPathVariants)).toEqual({ ok: true });
+  });
+
   it('rejects canonical-equivalent duplicates and unsafe URL variants', () => {
     const canonicalDuplicate = {
       ...validManifest,
