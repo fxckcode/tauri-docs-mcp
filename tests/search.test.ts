@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { searchDocs, validateSearchInput } from '../src/search.js';
+import { DOC_INDEX, searchDocs, validateSearchInput } from '../src/search.js';
 
 describe('search_tauri_docs search logic', () => {
   it('ranks exact title matches before contextual matches and returns bounded canonical results', () => {
@@ -35,5 +35,26 @@ describe('search_tauri_docs search logic', () => {
         message: 'limit must be an integer between 1 and 10',
       },
     });
+  });
+
+  it('keeps every indexed URL on the live official Tauri 2 documentation site', async () => {
+    const statuses = await Promise.all(
+      DOC_INDEX.map(async (entry) => ({
+        url: entry.url,
+        status: (await fetch(entry.url)).status,
+      })),
+    );
+
+    expect(statuses).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          url: 'https://v2.tauri.app/learn/window-customization/',
+          status: 200,
+        }),
+      ]),
+    );
+    expect(statuses.every(({ status }) => status >= 200 && status < 400)).toBe(
+      true,
+    );
   });
 });

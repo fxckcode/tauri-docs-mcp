@@ -20,8 +20,8 @@ export const DOC_INDEX: readonly DocEntry[] = [
   },
   {
     title: 'Window Customization',
-    url: 'https://v2.tauri.app/reference/window-customization/',
-    section: 'Reference > Window Customization',
+    url: 'https://v2.tauri.app/learn/window-customization/',
+    section: 'Learn > Window Customization',
     context: 'Configure native windows, decorations, size, and behavior.',
     version: 'Tauri 2',
     versionSensitive: true,

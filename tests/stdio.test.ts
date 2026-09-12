@@ -54,4 +54,42 @@ describe('stdio transport', () => {
     proc.kill();
     await once(proc, 'exit');
   });
+
+  it('returns the structured application error for an oversized limit', async () => {
+    const proc = spawn(process.execPath, ['--import', 'tsx', 'src/index.ts'], {
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    await send(proc, {
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'initialize',
+      params: {
+        protocolVersion: '2025-06-18',
+        capabilities: {},
+        clientInfo: { name: 'test', version: '1' },
+      },
+    });
+    proc.stdin?.write(
+      `${JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized', params: {} })}\n`,
+    );
+    const response = await send(proc, {
+      jsonrpc: '2.0',
+      id: 2,
+      method: 'tools/call',
+      params: {
+        name: 'search_tauri_docs',
+        arguments: { query: 'ipc', limit: 11 },
+      },
+    });
+
+    expect(response.result.isError).toBe(true);
+    expect(JSON.parse(response.result.content[0].text)).toEqual({
+      error: {
+        code: 'INVALID_LIMIT',
+        message: 'limit must be an integer between 1 and 10',
+      },
+    });
+    proc.kill();
+    await once(proc, 'exit');
+  });
 });
