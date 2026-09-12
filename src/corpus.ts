@@ -26,6 +26,8 @@ export type CorpusManifest = {
 export type GeneratedCorpus = {
   generated: true;
   snapshot: string;
+  generatedAt: string;
+  sourceRevision: string;
   entries: Array<{
     title: string;
     url: string;
@@ -33,12 +35,34 @@ export type GeneratedCorpus = {
     context: string;
     version: 'Tauri 2';
     versionSensitive: true;
+    sourceRevision: string;
+    fetchedAt: string;
+    contentHash: string;
     keywords: string[];
   }>;
 };
 
 export function contentHash(content: string): string {
   return `sha256:${createHash('sha256').update(content, 'utf8').digest('hex')}`;
+}
+
+export function canonicalizeUrl(value: string): string | undefined {
+  try {
+    const parsed = new URL(value);
+    if (
+      parsed.protocol !== 'https:' ||
+      parsed.hostname !== ALLOWED_HOST ||
+      (parsed.port !== '' && parsed.port !== '443') ||
+      parsed.username ||
+      parsed.password ||
+      parsed.search ||
+      parsed.hash
+    )
+      return undefined;
+    return parsed.href;
+  } catch {
+    return undefined;
+  }
 }
 
 export function validateManifest(
@@ -74,26 +98,22 @@ export function validateManifest(
       continue;
     }
     const item = entry as Partial<ManifestEntry>;
-    let parsed: URL | undefined;
-    try {
-      parsed = new URL(item.url ?? '');
-    } catch {
-      errors.push(`${prefix} URL is invalid`);
-    }
-    if (!parsed || parsed.protocol !== 'https:')
-      errors.push(`${prefix} URL must use HTTPS`);
-    if (
-      parsed &&
-      (parsed.hostname !== ALLOWED_HOST ||
-        parsed.username ||
-        parsed.password ||
-        parsed.search ||
-        parsed.hash)
-    )
+    const canonicalUrl =
+      typeof item.url === 'string' ? canonicalizeUrl(item.url) : undefined;
+    if (!canonicalUrl) {
+      let parsed: URL | undefined;
+      try {
+        parsed = new URL(item.url ?? '');
+      } catch {
+        errors.push(`${prefix} URL is invalid`);
+      }
+      if (!parsed || parsed.protocol !== 'https:')
+        errors.push(`${prefix} URL must use HTTPS`);
       errors.push(`${prefix} URL is not allowlisted`);
-    if (typeof item.url === 'string' && urls.has(item.url))
+    }
+    if (canonicalUrl && urls.has(canonicalUrl))
       errors.push(`${prefix} URL is duplicated`);
-    if (typeof item.url === 'string') urls.add(item.url);
+    if (canonicalUrl) urls.add(canonicalUrl);
     if (typeof item.title !== 'string' || !item.title.trim())
       errors.push(`${prefix} title is required`);
     if (
@@ -136,13 +156,18 @@ export function generateCorpus(manifest: CorpusManifest): GeneratedCorpus {
   return {
     generated: true,
     snapshot: manifest.snapshot,
+    generatedAt: manifest.generatedAt,
+    sourceRevision: manifest.entries[0].sourceRevision,
     entries: manifest.entries.map((entry) => ({
       title: entry.title,
-      url: entry.url,
+      url: canonicalizeUrl(entry.url)!,
       section: entry.section.join(' > '),
       context: entry.content,
       version: entry.version,
       versionSensitive: true,
+      sourceRevision: entry.sourceRevision,
+      fetchedAt: entry.fetchedAt,
+      contentHash: entry.contentHash,
       keywords: [...entry.keywords],
     })),
   };

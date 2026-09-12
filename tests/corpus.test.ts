@@ -32,6 +32,8 @@ describe('corpus pipeline', () => {
     expect(generateCorpus(validManifest)).toEqual({
       generated: true,
       snapshot: 'tauri-2@test-revision',
+      generatedAt: '2026-09-11T00:00:00.000Z',
+      sourceRevision: 'test-revision',
       entries: [
         {
           title: 'Capabilities',
@@ -40,6 +42,10 @@ describe('corpus pipeline', () => {
           context: 'Define permissions and scopes for Tauri 2 applications.',
           version: 'Tauri 2',
           versionSensitive: true,
+          sourceRevision: 'test-revision',
+          fetchedAt: '2026-09-10T00:00:00.000Z',
+          contentHash:
+            'sha256:de1e0733807882f984d71ef4b52a35e1980636b7381cc41f70d8d2c540f820cb',
           keywords: ['capabilities', 'permissions'],
         },
       ],
@@ -86,6 +92,50 @@ describe('corpus pipeline', () => {
     ).toMatchObject({ ok: false });
   });
 
+  it('rejects canonical-equivalent duplicates and unsafe URL variants', () => {
+    const canonicalDuplicate = {
+      ...validManifest,
+      entries: [
+        validManifest.entries[0],
+        {
+          ...validManifest.entries[0],
+          url: 'HTTPS://V2.TAURI.APP:443/security/capabilities/',
+        },
+      ],
+    };
+    expect(validateManifest(canonicalDuplicate)).toMatchObject({ ok: false });
+
+    const variants = [
+      'https://v2.tauri.app/security/capabilities/#fragment',
+      'https://v2.tauri.app:444/security/capabilities/',
+      'https://docs.tauri.app/security/capabilities/',
+      'http://v2.tauri.app/security/capabilities/',
+    ];
+    for (const url of variants) {
+      expect(
+        validateManifest({
+          ...validManifest,
+          entries: [{ ...validManifest.entries[0], url }],
+        }),
+      ).toMatchObject({ ok: false });
+    }
+  });
+
+  it('canonicalizes allowed default ports and host casing in output', () => {
+    const manifest = {
+      ...validManifest,
+      entries: [
+        {
+          ...validManifest.entries[0],
+          url: 'HTTPS://V2.TAURI.APP:443/security/capabilities/',
+        },
+      ],
+    };
+    expect(validateManifest(manifest)).toEqual({ ok: true });
+    expect(generateCorpus(manifest).entries[0].url).toBe(
+      'https://v2.tauri.app/security/capabilities/',
+    );
+  });
   it('rejects mutable or malformed snapshot identifiers', () => {
     expect(
       validateManifest({ ...validManifest, snapshot: 'tauri-2' }),
