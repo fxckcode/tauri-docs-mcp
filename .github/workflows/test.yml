@@ -1,0 +1,50 @@
+name: Test
+
+on:
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'corpus/**'
+      - 'scripts/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.json'
+      - 'eslint.config.js'
+      - '.prettierrc.json'
+      - '.github/workflows/**'
+      - 'README.md'
+      - 'CONTRIBUTING.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - uses: actions/setup-node@v4.4.0
+        with:
+          node-version: 22.14.0
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm run format:check
+      - run: npm test
+      - name: Pack and verify runtime allowlist
+        env:
+          PACK_DIR: ${{ runner.temp }}/tauri-docs-mcp-package
+        run: |
+          mkdir -p "$PACK_DIR"
+          npm pack --json --pack-destination "$PACK_DIR" > "$PACK_DIR/pack.json"
+          node -e "const fs=require('node:fs'); const p=JSON.parse(fs.readFileSync(process.env.PACK_DIR + '/pack.json','utf8')); if (p.length !== 1 || !p[0].filename) throw new Error('npm pack did not return one tarball'); console.log(p[0].filename)"
+          TARBALL="$PACK_DIR/$(node -p "JSON.parse(require('fs').readFileSync(process.env.PACK_DIR + '/pack.json'))[0].filename")"
+          npm run package:smoke -- "$TARBALL"

@@ -91,6 +91,18 @@ npm run lint         # ESLint
 npm run format       # format tracked source and documentation
 npm run format:check # verify formatting without writing
 npm pack --dry-run   # inspect the publish allowlist
+npm run package:smoke -- /path/to/tauri-docs-mcp-0.1.0.tgz # test a packed install
+```
+
+The pull-request workflow runs the same commands from a clean checkout. To
+reproduce its package step locally, create a tarball and pass its path to the
+smoke test:
+
+```bash
+mkdir -p .tmp/package
+TARBALL=$(npm pack --json --pack-destination .tmp/package | node -e "let s=''; process.stdin.on('data', d => s += d).on('end', () => process.stdout.write(JSON.parse(s)[0].filename))")
+npm run package:smoke -- ".tmp/package/$TARBALL"
+rm -rf .tmp
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution rules and

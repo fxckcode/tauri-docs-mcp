@@ -24,6 +24,17 @@ npm run format:check
 npm pack --dry-run
 ```
 
+The authoritative PR check also packs the project and installs that tarball
+in a disposable directory before exercising MCP initialization, `tools/list`,
+a valid search, and invalid input. Reproduce that check locally with:
+
+```bash
+mkdir -p .tmp/package
+TARBALL=$(npm pack --json --pack-destination .tmp/package | node -e "let s=''; process.stdin.on('data', d => s += d).on('end', () => process.stdout.write(JSON.parse(s)[0].filename))")
+npm run package:smoke -- ".tmp/package/$TARBALL"
+rm -rf .tmp
+```
+
 Run the local stdio server with `node --import tsx src/index.ts`, or run the
 built package with `node dist/src/index.js` after `npm run build`.
 

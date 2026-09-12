@@ -37,7 +37,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "format:check": "prettier --check .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "package:smoke": "tsx scripts/package-smoke.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
