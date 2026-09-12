@@ -3,7 +3,33 @@
   "version": "0.1.0",
   "description": "Read-only MCP search server for official Tauri 2 documentation.",
   "type": "module",
-  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fxckcode/tauri-docs-mcp.git"
+  },
+  "homepage": "https://github.com/fxckcode/tauri-docs-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/fxckcode/tauri-docs-mcp/issues"
+  },
+  "license": "MIT",
+  "author": "fxckcode",
+  "keywords": [
+    "mcp",
+    "tauri",
+    "documentation",
+    "stdio"
+  ],
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "bin": {
+    "tauri-docs-mcp": "dist/src/index.js"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
